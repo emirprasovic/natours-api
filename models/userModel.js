@@ -20,6 +20,7 @@ const userSchema = new mongoose.Schema({
   },
   photo: {
     type: String,
+    default: 'default.jpg',
   },
   role: {
     type: String,
@@ -106,7 +107,7 @@ userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
       this.passwordChangedAt.getTime() / 1000,
       10,
     );
-    console.log(changedTimestamp, JWTTimestamp);
+    // console.log(changedTimestamp, JWTTimestamp);
     // password promijenili prije nego sto je jwt issuean? true: pwd je promijenjena, nemamo pristup ruti; false, sve ok
     return changedTimestamp > JWTTimestamp;
   }
@@ -123,7 +124,7 @@ userSchema.methods.createPasswordResetToken = function () {
 
   this.passwordResetExpires = Date.now() + 5 * 60 * 1000;
 
-  console.log({ resetToken }, this.passwordResetToken);
+  // console.log({ resetToken }, this.passwordResetToken);
 
   // na email saljemo unencrypted reset token, i njegov hash cemo provjeriti sa hasiranim tokenom u bazi
   return resetToken;

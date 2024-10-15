@@ -6,7 +6,7 @@ const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const hpp = require('hpp');
-
+const cookieParser = require('cookie-parser');
 const path = require('path');
 
 const AppError = require('./utils/appError');
@@ -14,8 +14,17 @@ const globalErrorHandler = require('./controllers/errorController');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
+const viewRouter = require('./routes/viewRoutes');
 
 const app = express();
+
+// app.use((req, res, next) => {
+//   res.setHeader(
+//     'Content-Security-Policy',
+//     "script-src 'self' https://cdnjs.cloudflare.com",
+//   );
+//   next();
+// });
 
 // express po defaultu supporta pug
 app.set('view engine', 'pug');
@@ -47,6 +56,12 @@ app.use('/api', limiter);
 // Body parser. Without it, each time we send json data, req.body will be undefined. Limit the body to a maximum size of 10kB
 app.use(express.json({ limit: '10kb' }));
 
+// Cookie parser. Sa ovim, kada npr. console logamo req.cookies, dobijemo dobar output. A bez njega, dobijemo undefined
+app.use(cookieParser());
+
+// Kad saljemo data iz forme, ona bude url encoded. Dodamo ovaj middleware kako bismo ga valjda dekodirarli. Ovo se ne odnosi na file uploads
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
 // Data sanitization against NoSQL Query Injection
 //Primjer. ne mozemo koristiti $ selector u "email": { "$gte": "" }. Dobijemo error
 app.use(mongoSanitize());
@@ -72,17 +87,15 @@ app.use(
 
 // Test custom middleware
 
-// app.use((req, res, next) => {c
-//   req.MyCustomRequestField = '123';
-//   next();
-// });
+app.use((req, res, next) => {
+  // req.MyCustomRequestField = '123';
+  // console.log(req.cookies);
+  next();
+});
 
 // MOUNTING ROUTERS
 
-app.get('/', (req, res) => {
-  res.status(200).render('base');
-});
-
+app.use('/', viewRouter);
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/reviews', reviewRouter);

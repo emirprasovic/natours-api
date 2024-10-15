@@ -24,7 +24,7 @@ router
   )
   .patch(
     authController.restrictTo('user', 'admin'),
-    // reviewController.updateReviewMid,
+    // reviewController.restrictActionToCurrentUser,
     reviewController.updateReview,
   )
   .get(reviewController.getReview);

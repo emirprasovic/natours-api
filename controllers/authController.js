@@ -50,7 +50,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     passwordChangedAt: req.body.passwordChangedAt,
     // role: req.body.role,
   });
-  const token = signToken(newUser._id);
+  // const token = signToken(newUser._id);
 
   createAndSendToken(newUser, 201, res);
 });
@@ -94,7 +94,7 @@ exports.login = catchAsync(async (req, res, next) => {
       await user.save({ validateBeforeSave: false });
     }
 
-    return next(new AppError(`Incorrect email or password`, 401));
+    return next(new AppError(`Incorrect email or password`, 400));
   }
 
   // 3) Ako ukucamo ispravnu sifru, ponovo provjerimo da li je user lockan
@@ -113,6 +113,19 @@ exports.login = catchAsync(async (req, res, next) => {
   createAndSendToken(user, 200, res);
 });
 
+exports.logout = (req, res, next) => {
+  res.clearCookie('jwt');
+
+  // OVAJ KOD ISPOD MI BACI ERROR DOK IMAMO COOKIE (JWT MALFORMED ERROR), PA SMO SAMO CLEARALI COOKIE
+  // res.cookie('jwt', 'loggedout', {
+  //   expires: new Date(Date.now() + 10 * 1000),
+  //   httpOnly: true,
+  // });
+  res.status(200).json({
+    status: 'success',
+  });
+};
+
 exports.protect = catchAsync(async (req, res, next) => {
   // 1) Get token
   let token;
@@ -121,8 +134,9 @@ exports.protect = catchAsync(async (req, res, next) => {
     req.headers.authorization.startsWith('Bearer')
   ) {
     token = req.headers.authorization.split(' ')[1];
+  } else if (req.cookies.jwt) {
+    token = req.cookies.jwt;
   }
-  // console.log(token);
 
   if (!token) {
     return next(new AppError('You are not logged in', 401));
@@ -145,9 +159,10 @@ exports.protect = catchAsync(async (req, res, next) => {
       new AppError('User recently changed password. Please log in again', 401),
     );
 
-  // ACCESS TO PROTECTED ROUTE
-  req.user = currentUser; // might be useful
-  // console.log(req.user);
+  // ACCESS TO PROTECTED ROUTE, svaki middleware koji dodje poslije ovog imat ce u requestu usera
+  req.user = currentUser;
+  // For templates
+  res.locals.user = currentUser;
   next();
 });
 
@@ -247,4 +262,23 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
 
   // 4) Log user in, send JWT
   createAndSendToken(user, 200, res);
+});
+
+// Only for rendered pages
+exports.isLoggedIn = catchAsync(async (req, res, next) => {
+  if (req.cookies.jwt) {
+    const decoded = await promisify(jwt.verify)(
+      req.cookies.jwt,
+      process.env.JWT_SECRET,
+    );
+
+    const currentUser = await User.findById(decoded.id);
+    if (!currentUser) return next();
+    // 4) Check if user changed password after the token was issued
+    if (currentUser.changedPasswordAfter(decoded.iat)) return next();
+
+    res.locals.user = currentUser;
+    return next();
+  }
+  next();
 });

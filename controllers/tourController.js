@@ -1,10 +1,76 @@
-/* eslint-disable arrow-body-style */
+/* eslint-disable import/no-extraneous-dependencies */
+
+const multer = require('multer');
+const sharp = require('sharp');
 const Tour = require('../models/tourModel');
 const APIFeatures = require('../utils/apiFeatures');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
 const factory = require('./handlerFactory');
+
+const multerStorage = multer.memoryStorage();
+
+// Test if uploaded file is an image
+const multerFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image')) {
+    cb(null, true);
+  } else {
+    cb(new AppError('Not an image. Please upload only images', 400), false);
+  }
+};
+
+// const upload = multer({ dest: 'public/img/users' });
+const upload = multer({
+  storage: multerStorage,
+  fileFilter: multerFilter,
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
+
+exports.uploadTourImages = upload.fields([
+  { name: 'imageCover', maxCount: 1 },
+  { name: 'images', maxCount: 3 },
+]);
+
+exports.resizeTourImage = catchAsync(async (req, res, next) => {
+  // console.log(req.files);
+
+  if (!req.files.imageCover || !req.files.images) return next();
+
+  // 1) Cover image
+  const imageCoverFilename = `tour-${req.params.id}-${Date.now()}-cover.jpeg`;
+
+  await sharp(req.files.imageCover[0].buffer)
+    .resize(2000, 1333)
+    .toFormat('jpeg')
+    .jpeg({ quality: 90 })
+    .toFile(`public/img/tours/${imageCoverFilename}`);
+
+  req.body.imageCover = imageCoverFilename;
+
+  // 2) Other images
+
+  req.body.images = [];
+
+  // .map(async) CE NAM RETURNATI ARRAY PROMISE-A, NECE IH ODMAH RESOLVATI I AKO AWAITAMO PA MORAMO ISORISTITI PROMISE.ALL, INACE NECE RADIT
+  // Zasto .map(async) vraca Promises? JER SVAKA ASYNC FUNKCIJA VRACA PROMISE. Funkcija unutar .map je async i ona ce vratiti Promises
+  await Promise.all(
+    req.files.images.map(async (file, i) => {
+      const filename = `tour-${req.params.id}-${Date.now()}-${i + 1}.jpeg`;
+
+      await sharp(file.buffer)
+        .resize(2000, 1333)
+        .toFormat('jpeg')
+        .jpeg({ quality: 90 })
+        .toFile(`public/img/tours/${filename}`);
+
+      req.body.images.push(filename);
+    }),
+  );
+  console.log(req.body);
+  next();
+});
+// upload.array('images', 5); ako bismo imali samo 1 filed, korsitmo .array
 
 exports.aliasTopTours = (req, res, next) => {
   req.query.limit = '5';
@@ -124,7 +190,7 @@ exports.getToursWithin = catchAsync(async (req, res, next) => {
     startLocation: { $geoWithin: { $centerSphere: [[lng, lat], radius] } },
   });
 
-  console.log(distance, lat, lng, unit);
+  // console.log(distance, lat, lng, unit);
   res.status(200).json({
     status: 'success',
     results: tours.length,
