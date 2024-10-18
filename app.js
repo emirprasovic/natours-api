@@ -1,156 +1,130 @@
-require("core-js/modules/es.regexp.flags.js");
-require("core-js/modules/esnext.map.group-by.js");
-require("core-js/modules/esnext.symbol.dispose.js");
+/* eslint-disable import/no-extraneous-dependencies */
+const express = require('express');
+const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
+const hpp = require('hpp');
+const cookieParser = require('cookie-parser');
+const path = require('path');
+const compression = require('compression');
 
-/* eslint-disable */ 
+const AppError = require('./utils/appError');
+const globalErrorHandler = require('./controllers/errorController');
+const tourRouter = require('./routes/tourRoutes');
+const userRouter = require('./routes/userRoutes');
+const reviewRouter = require('./routes/reviewRoutes');
+const viewRouter = require('./routes/viewRoutes');
+const bookingRouter = require('./routes/bookingRoutes');
 
+const app = express();
 
-/* eslint-disable */ const $c2d892ebf1e61ddb$export$de026b00723010c1 = (type, message)=>{
-    $c2d892ebf1e61ddb$export$516836c6a9dfc573();
-    const markup = `<div class="alert alert--${type}">${message}</div>`;
-    document.querySelector("body").insertAdjacentHTML("afterbegin", markup);
-    window.setTimeout($c2d892ebf1e61ddb$export$516836c6a9dfc573, 5000);
-};
-const $c2d892ebf1e61ddb$export$516836c6a9dfc573 = ()=>{
-    const el = document.querySelector(".alert");
-    if (el) el.parentElement.removeChild(el);
-};
+// app.use((req, res, next) => {
+//   res.setHeader(
+//     'Content-Security-Policy',
+//     "script-src 'self' https://cdnjs.cloudflare.com",
+//   );
+//   next();
+// });
 
+// express po defaultu supporta pug
+app.set('view engine', 'pug');
+app.set('views', path.join(__dirname, 'views'));
 
-const $7570edde942f4242$var$postData = async (url, data)=>{
-    const response = await fetch(url, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(data)
-    });
-    return response.json();
-};
-const $7570edde942f4242$export$596d806903d1f59e = async (email, password)=>{
-    const res = await $7570edde942f4242$var$postData("http://127.0.0.1:3000/api/v1/users/login", {
-        email: email,
-        password: password
-    });
-    if (res.status === "success") {
-        (0, $c2d892ebf1e61ddb$export$de026b00723010c1)("success", "Successfully logged in");
-        window.setTimeout(()=>location.assign("/"), 1000);
-    } else (0, $c2d892ebf1e61ddb$export$de026b00723010c1)("error", res.message);
-};
-const $7570edde942f4242$export$a0973bcfe11b05c9 = async ()=>{
-    // console.log('LOGOUT');
-    try {
-        const res = await fetch("http://127.0.0.1:3000/api/v1/users/logout");
-        const data = await res.json();
-        // console.log(data);
-        if (data.status === "success") // console.log('Success');
-        location.reload(true);
-    } catch (err) {
-        (0, $c2d892ebf1e61ddb$export$de026b00723010c1)("error", "Error logging out :o");
-    }
-};
+// GLOBAL MIDDLEWARES
 
+// Serving static files
+// app.use(express.static(`${__dirname}/public`));
+app.use(express.static(path.join(__dirname, 'public')));
 
-/* eslint-disable */ 
-const $d33a86d74089f009$var$patchData = async (url, data)=>{
-    const response = await fetch(url, {
-        method: "PATCH",
-        // headers: {
-        //   'Content-Type': 'application/json',
-        // },
-        // body: JSON.stringify(data), // body data type must match "Content-Type" header
-        body: data
-    });
-    return response.json();
-};
-const $d33a86d74089f009$export$f558026a994b6051 = async (data, type = "data")=>{
-    const url = type === "password" ? "http://127.0.0.1:3000/api/v1/users/update-my-password" : "http://127.0.0.1:3000/api/v1/users/update-me";
-    const res = await $d33a86d74089f009$var$patchData(url, data);
-    if (res.status === "success") (0, $c2d892ebf1e61ddb$export$de026b00723010c1)("success", `Successfully updated ${type}`);
-    else (0, $c2d892ebf1e61ddb$export$de026b00723010c1)("error", res.message);
-};
+// Set security http headers
+app.use(helmet());
 
+// Zbog errora: "js.stripe.com/:1 Refused to frame 'https://js.stripe.com/' because it violates the following Content Security Policy directive: "default-src 'self'". Note that 'frame-src' was not explicitly set, so 'default-src' is used as a fallback."
+app.use(
+  helmet.contentSecurityPolicy({
+    useDefaults: true,
+    directives: {
+      'default-src': ["'self'"],
+      'script-src': ["'self'", 'https://js.stripe.com'],
+      'frame-src': ["'self'", 'https://js.stripe.com'], // Add this line
+      // Add other directives as needed
+    },
+  }),
+);
 
+// Development logging
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev')); // da nam ispise u konzoli brief overview svakog requesta
+}
 
-const $cb5878a512e7ac1f$var$stripe = Stripe("pk_test_51QAavcAQvZCakeQq3AIdR7wMyzPY1xCTT1UFwZ0iqWetBeMGg7PwIANjEldgKGaIL8gxGROKSSXsvFRW20LxPSy400Rtz1WDIw");
-const $cb5878a512e7ac1f$var$fetchData = async (url)=>{
-    const response = await fetch(url, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json"
-        }
-    });
-    return response.json();
-};
-const $cb5878a512e7ac1f$export$8d5bdbf26681c0c2 = async (tourId)=>{
-    try {
-        // 1) Get checkout session from API
-        const session = await $cb5878a512e7ac1f$var$fetchData(`http://127.0.0.1:3000/api/v1/bookings/checkout-session/${tourId}`);
-        // console.log(session);
-        // 2) Create checkout form + charge credit card
-        await $cb5878a512e7ac1f$var$stripe.redirectToCheckout({
-            sessionId: session.session.id
-        });
-    } catch (err) {
-        // console.log(err);
-        (0, $c2d892ebf1e61ddb$export$de026b00723010c1)("error", err);
-    }
-};
-
-
-// DOM
-const $a386374224be1cff$var$loginForm = document.querySelector(".form-login");
-const $a386374224be1cff$var$logoutBtn = document.querySelector(".nav__el--logout");
-const $a386374224be1cff$var$updateUserDataForm = document.querySelector(".form-user-data");
-const $a386374224be1cff$var$updateUserPasswordForm = document.querySelector(".form-user-settings");
-const $a386374224be1cff$var$bookBtn = document.querySelector("#book-tour");
-if ($a386374224be1cff$var$loginForm) $a386374224be1cff$var$loginForm.addEventListener("submit", (e)=>{
-    e.preventDefault();
-    const email = document.querySelector("#email").value;
-    const password = document.querySelector("#password").value;
-    (0, $7570edde942f4242$export$596d806903d1f59e)(email, password);
-});
-if ($a386374224be1cff$var$logoutBtn) $a386374224be1cff$var$logoutBtn.addEventListener("click", (0, $7570edde942f4242$export$a0973bcfe11b05c9));
-if ($a386374224be1cff$var$updateUserDataForm) $a386374224be1cff$var$updateUserDataForm.addEventListener("submit", (e)=>{
-    e.preventDefault();
-    const name = document.querySelector("#name").value;
-    const email = document.querySelector("#email").value;
-    // Moramo ovako raditi zbog images
-    const form = new FormData();
-    form.append("name", document.querySelector("#name").value);
-    form.append("email", document.querySelector("#email").value);
-    form.append("photo", document.querySelector("#photo").files[0]);
-    // console.log('FORM');
-    // for (let [key, value] of form.entries()) {
-    //   console.log(key, value);
-    // }
-    (0, $d33a86d74089f009$export$f558026a994b6051)(form, "data");
-// updateSettings({ name, email }, 'data');
-});
-if ($a386374224be1cff$var$updateUserPasswordForm) $a386374224be1cff$var$updateUserPasswordForm.addEventListener("submit", (e)=>{
-    e.preventDefault();
-    const btn = document.querySelector(".btn--save-password");
-    btn.innerHTML = "Updating...";
-    const passwordCurrent = document.querySelector("#password-current").value;
-    const newPassword = document.querySelector("#password").value;
-    const passwordConfirm = document.querySelector("#password-confirm").value;
-    (0, $d33a86d74089f009$export$f558026a994b6051)({
-        passwordCurrent: passwordCurrent,
-        newPassword: newPassword,
-        passwordConfirm: passwordConfirm
-    }, "password").then(()=>{
-        document.querySelector("#password").value = "";
-        document.querySelector("#password-confirm").value = "";
-        document.querySelector("#password-current").value = "";
-        btn.innerHTML = "Save password";
-    });
-});
-if ($a386374224be1cff$var$bookBtn) $a386374224be1cff$var$bookBtn.addEventListener("click", (e)=>{
-    e.target.textContent = "Processing...";
-    e.preventDefault();
-    const tourId = e.target.dataset.tourId;
-    (0, $cb5878a512e7ac1f$export$8d5bdbf26681c0c2)(tourId);
+const limiter = rateLimit({
+  max: 100,
+  windowMs: 1000 * 60 * 60,
+  message: 'Too many requests from this IP, please try again later',
 });
 
+// Limit requests from same IP. Adds new headers related to the limit
+app.use('/api', limiter);
 
-//# sourceMappingURL=app.js.map
+// Body parser. Without it, each time we send json data, req.body will be undefined. Limit the body to a maximum size of 10kB
+app.use(express.json({ limit: '10kb' }));
+
+// Cookie parser. Sa ovim, kada npr. console logamo req.cookies, dobijemo dobar output. A bez njega, dobijemo undefined
+app.use(cookieParser());
+
+// Kad saljemo data iz forme, ona bude url encoded. Dodamo ovaj middleware kako bismo ga valjda dekodirarli. Ovo se ne odnosi na file uploads
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// Data sanitization against NoSQL Query Injection
+//Primjer. ne mozemo koristiti $ selector u "email": { "$gte": "" }. Dobijemo error
+app.use(mongoSanitize());
+
+// Data sanitization against XSS (Cross Site Scripting) (npr. da ne mozemo unijeti html kod sa prikacenim js kodom)
+// Primjer. "<div id='emir'></div>" pretvori u "&lt;div id='emir'>&lt;/div>"
+app.use(xss());
+
+// Http Parameter Pollution - prevent it
+// Primjer. api/v1/tours?sort=-price&sort=ratingsAverage izbacuje error bez ovog jer imamo 2 sort propertyja. Ovako ce samo iskoristiti zadnji. Medjutim, problem je sto za neka polja zelimo duplikate, npr. za svaki field koji mozemo searchat (price, duration, rating..)
+app.use(
+  hpp({
+    whitelist: [
+      'duration',
+      'ratingsAverage',
+      'ratingsQuantity',
+      'maxGroupSize',
+      'difficulty',
+      'price',
+    ],
+  }),
+);
+
+// Compress text
+app.use(compression());
+
+// Test custom middleware
+
+app.use((req, res, next) => {
+  // req.MyCustomRequestField = '123';
+  // console.log(req.cookies);
+  next();
+});
+
+// MOUNTING ROUTERS
+
+app.use('/', viewRouter);
+app.use('/api/v1/tours', tourRouter);
+app.use('/api/v1/users', userRouter);
+app.use('/api/v1/reviews', reviewRouter);
+app.use('/api/v1/bookings', bookingRouter);
+
+// 404 handler. Each route that isn't handled by our mounted routers means that it is undefined
+app.all('*', (req, res, next) => {
+  next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));
+});
+
+// globalno handlamo SVAKI ERROR koji dobijemo. Ovdje errore proslijedjujemo pomocu .next(err)
+app.use(globalErrorHandler);
+
+module.exports = app;
