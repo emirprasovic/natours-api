@@ -1,6 +1,7 @@
 const express = require('express');
 const viewController = require('../controllers/viewController');
 const authController = require('../controllers/authController');
+const bookingController = require('../controllers/bookingController');
 
 const router = express.Router();
 
@@ -13,11 +14,20 @@ router.post(
   authController.protect,
   viewController.updateUserData,
 );
+router.get(
+  '/my-bookings',
+  authController.protect,
+  viewController.getMyBookings,
+);
 
 // Ako je user logovan (imamo jwt cookie), onda ce biti dostupan u pug templates kroz res.locals
 router.use(authController.isLoggedIn);
 
-router.get('/', viewController.getOverview);
+router.get(
+  '/',
+  bookingController.createBookingCheckout,
+  viewController.getOverview,
+);
 router.get('/tour/:slug', viewController.getTour);
 router.get('/login', viewController.getLoginPage);
 

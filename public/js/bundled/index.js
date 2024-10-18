@@ -589,12 +589,13 @@ var _esnextSymbolDisposeJs = require("core-js/modules/esnext.symbol.dispose.js")
 var _webImmediateJs = require("core-js/modules/web.immediate.js");
 var _login = require("./login");
 var _updateSettings = require("./updateSettings");
-console.log("Hello from parcel");
+var _stripe = require("./stripe");
 // DOM
 const loginForm = document.querySelector(".form-login");
 const logoutBtn = document.querySelector(".nav__el--logout");
 const updateUserDataForm = document.querySelector(".form-user-data");
 const updateUserPasswordForm = document.querySelector(".form-user-settings");
+const bookBtn = document.querySelector("#book-tour");
 if (loginForm) loginForm.addEventListener("submit", (e)=>{
     e.preventDefault();
     const email = document.querySelector("#email").value;
@@ -636,8 +637,14 @@ if (updateUserPasswordForm) updateUserPasswordForm.addEventListener("submit", (e
         btn.innerHTML = "Save password";
     });
 });
+if (bookBtn) bookBtn.addEventListener("click", (e)=>{
+    e.target.textContent = "Processing...";
+    e.preventDefault();
+    const tourId = e.target.dataset.tourId;
+    (0, _stripe.bookTour)(tourId);
+});
 
-},{"core-js/modules/esnext.map.group-by.js":"3AR1K","core-js/modules/esnext.symbol.dispose.js":"b9ez5","core-js/modules/web.immediate.js":"49tUX","./login":"7yHem","./updateSettings":"l3cGY"}],"3AR1K":[function(require,module,exports) {
+},{"core-js/modules/esnext.map.group-by.js":"3AR1K","core-js/modules/esnext.symbol.dispose.js":"b9ez5","core-js/modules/web.immediate.js":"49tUX","./login":"7yHem","./updateSettings":"l3cGY","./stripe":"10tSC"}],"3AR1K":[function(require,module,exports) {
 "use strict";
 // TODO: Remove from `core-js@4`
 require("4d92d9132913bacd");
@@ -2267,6 +2274,36 @@ const updateSettings = async (data, type = "data")=>{
     const res = await patchData(url, data);
     if (res.status === "success") (0, _alerts.showAlert)("success", `Successfully updated ${type}`);
     else (0, _alerts.showAlert)("error", res.message);
+};
+
+},{"./alerts":"6Mcnf","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"10tSC":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "bookTour", ()=>bookTour);
+var _alerts = require("./alerts");
+const stripe = Stripe("pk_test_51QAavcAQvZCakeQq3AIdR7wMyzPY1xCTT1UFwZ0iqWetBeMGg7PwIANjEldgKGaIL8gxGROKSSXsvFRW20LxPSy400Rtz1WDIw");
+const fetchData = async (url)=>{
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+    return response.json();
+};
+const bookTour = async (tourId)=>{
+    try {
+        // 1) Get checkout session from API
+        const session = await fetchData(`http://127.0.0.1:3000/api/v1/bookings/checkout-session/${tourId}`);
+        console.log(session);
+        // 2) Create checkout form + charge credit card
+        await stripe.redirectToCheckout({
+            sessionId: session.session.id
+        });
+    } catch (err) {
+        console.log(err);
+        (0, _alerts.showAlert)("error", err);
+    }
 };
 
 },{"./alerts":"6Mcnf","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["kx4kz","f2QDv"], "f2QDv", "parcelRequire11c7")

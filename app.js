@@ -15,6 +15,7 @@ const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
 const viewRouter = require('./routes/viewRoutes');
+const bookingRouter = require('./routes/bookingRoutes');
 
 const app = express();
 
@@ -38,6 +39,19 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Set security http headers
 app.use(helmet());
+
+// Zbog errora: "js.stripe.com/:1 Refused to frame 'https://js.stripe.com/' because it violates the following Content Security Policy directive: "default-src 'self'". Note that 'frame-src' was not explicitly set, so 'default-src' is used as a fallback."
+app.use(
+  helmet.contentSecurityPolicy({
+    useDefaults: true,
+    directives: {
+      'default-src': ["'self'"],
+      'script-src': ["'self'", 'https://js.stripe.com'],
+      'frame-src': ["'self'", 'https://js.stripe.com'], // Add this line
+      // Add other directives as needed
+    },
+  }),
+);
 
 // Development logging
 if (process.env.NODE_ENV === 'development') {
@@ -99,6 +113,7 @@ app.use('/', viewRouter);
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/reviews', reviewRouter);
+app.use('/api/v1/bookings', bookingRouter);
 
 // 404 handler. Each route that isn't handled by our mounted routers means that it is undefined
 app.all('*', (req, res, next) => {

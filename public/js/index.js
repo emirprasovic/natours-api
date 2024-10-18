@@ -3,13 +3,14 @@ import 'core-js/actual';
 import { login } from './login';
 import { logout } from './login';
 import { updateSettings } from './updateSettings';
+import { bookTour } from './stripe';
 
-console.log('Hello from parcel');
 // DOM
 const loginForm = document.querySelector('.form-login');
 const logoutBtn = document.querySelector('.nav__el--logout');
 const updateUserDataForm = document.querySelector('.form-user-data');
 const updateUserPasswordForm = document.querySelector('.form-user-settings');
+const bookBtn = document.querySelector('#book-tour');
 
 if (loginForm) {
   loginForm.addEventListener('submit', (e) => {
@@ -70,5 +71,14 @@ if (updateUserPasswordForm) {
 
       btn.innerHTML = 'Save password';
     });
+  });
+}
+
+if (bookBtn) {
+  bookBtn.addEventListener('click', (e) => {
+    e.target.textContent = 'Processing...';
+    e.preventDefault();
+    const tourId = e.target.dataset.tourId;
+    bookTour(tourId);
   });
 }
