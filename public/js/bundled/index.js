@@ -2183,7 +2183,7 @@ const postData = async (url, data)=>{
     return response.json();
 };
 const login = async (email, password)=>{
-    const res = await postData("http://127.0.0.1:3000/api/v1/users/login", {
+    const res = await postData("/api/v1/users/login", {
         email,
         password
     });
@@ -2195,7 +2195,7 @@ const login = async (email, password)=>{
 const logout = async ()=>{
     // console.log('LOGOUT');
     try {
-        const res = await fetch("http://127.0.0.1:3000/api/v1/users/logout");
+        const res = await fetch("/api/v1/users/logout");
         const data = await res.json();
         // console.log(data);
         if (data.status === "success") // console.log('Success');
@@ -2268,7 +2268,7 @@ const patchData = async (url, data)=>{
     return response.json();
 };
 const updateSettings = async (data, type = "data")=>{
-    const url = type === "password" ? "http://127.0.0.1:3000/api/v1/users/update-my-password" : "http://127.0.0.1:3000/api/v1/users/update-me";
+    const url = type === "password" ? "/api/v1/users/update-my-password" : "/api/v1/users/update-me";
     const res = await patchData(url, data);
     if (res.status === "success") (0, _alerts.showAlert)("success", `Successfully updated ${type}`);
     else (0, _alerts.showAlert)("error", res.message);
@@ -2292,7 +2292,7 @@ const fetchData = async (url)=>{
 const bookTour = async (tourId)=>{
     try {
         // 1) Get checkout session from API
-        const session = await fetchData(`http://127.0.0.1:3000/api/v1/bookings/checkout-session/${tourId}`);
+        const session = await fetchData(`/api/v1/bookings/checkout-session/${tourId}`);
         // console.log(session);
         // 2) Create checkout form + charge credit card
         await stripe.redirectToCheckout({
