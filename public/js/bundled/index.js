@@ -2193,15 +2193,13 @@ const login = async (email, password)=>{
     } else (0, _alerts.showAlert)("error", res.message);
 };
 const logout = async ()=>{
-    console.log("LOGOUT");
+    // console.log('LOGOUT');
     try {
         const res = await fetch("http://127.0.0.1:3000/api/v1/users/logout");
         const data = await res.json();
-        console.log(data);
-        if (data.status === "success") {
-            console.log("Success");
-            location.reload(true);
-        }
+        // console.log(data);
+        if (data.status === "success") // console.log('Success');
+        location.reload(true);
     } catch (err) {
         (0, _alerts.showAlert)("error", "Error logging out :o");
     }
@@ -2295,13 +2293,13 @@ const bookTour = async (tourId)=>{
     try {
         // 1) Get checkout session from API
         const session = await fetchData(`http://127.0.0.1:3000/api/v1/bookings/checkout-session/${tourId}`);
-        console.log(session);
+        // console.log(session);
         // 2) Create checkout form + charge credit card
         await stripe.redirectToCheckout({
             sessionId: session.session.id
         });
     } catch (err) {
-        console.log(err);
+        // console.log(err);
         (0, _alerts.showAlert)("error", err);
     }
 };

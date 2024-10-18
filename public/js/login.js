@@ -27,13 +27,13 @@ export const login = async (email, password) => {
 };
 
 export const logout = async () => {
-  console.log('LOGOUT');
+  // console.log('LOGOUT');
   try {
     const res = await fetch('http://127.0.0.1:3000/api/v1/users/logout');
     const data = await res.json();
-    console.log(data);
+    // console.log(data);
     if (data.status === 'success') {
-      console.log('Success');
+      // console.log('Success');
       location.reload(true);
     }
   } catch (err) {

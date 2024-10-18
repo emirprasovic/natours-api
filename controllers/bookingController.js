@@ -3,9 +3,9 @@ const Stripe = require('stripe');
 
 const Tour = require('../models/tourModel');
 const Booking = require('../models/bookingModel');
-const APIFeatures = require('../utils/apiFeatures');
+// const APIFeatures = require('../utils/apiFeatures');
 const catchAsync = require('../utils/catchAsync');
-const AppError = require('../utils/appError');
+// const AppError = require('../utils/appError');
 
 const factory = require('./handlerFactory');
 

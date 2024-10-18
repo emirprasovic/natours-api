@@ -4,17 +4,19 @@
   "description": "",
   "main": "app.js",
   "scripts": {
+    "start": "node server.js",
     "start:dev": "nodemon server.js",
     "start:prod": "SET NODE_ENV=production&&nodemon server.js",
     "debug": "ndb server.js",
     "watch:js": "parcel serve ./public/js/index.js --dist-dir ./public/js/bundled --no-cache",
-    "build:js": "parcel build ./public/js/index.js --dist-dir ./public/js/bundled"
+    "build:js": "parcel build ./public/js/index.js --dist-dir ./public/js/bundled --no-cache"
   },
   "author": "Emir Prasovic",
   "license": "ISC",
   "dependencies": {
     "@babel/polyfill": "^7.12.1",
     "bcryptjs": "^2.4.3",
+    "compression": "^1.7.4",
     "cookie-parser": "^1.4.7",
     "core-js": "^3.38.1",
     "dotenv": "^16.4.5",

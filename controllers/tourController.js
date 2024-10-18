@@ -67,7 +67,7 @@ exports.resizeTourImage = catchAsync(async (req, res, next) => {
       req.body.images.push(filename);
     }),
   );
-  console.log(req.body);
+  // console.log(req.body);
   next();
 });
 // upload.array('images', 5); ako bismo imali samo 1 filed, korsitmo .array
